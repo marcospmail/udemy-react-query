@@ -1,3 +1,6 @@
+import { useQuery } from "react-query";
+
+/* eslint-disable no-unused-vars */
 async function fetchComments(postId) {
   const response = await fetch(
     `https://jsonplaceholder.typicode.com/comments?postId=${postId}`
@@ -22,14 +25,17 @@ async function updatePost(postId) {
 }
 
 export function PostDetail({ post }) {
-  // replace with useQuery
-  const data = [];
+  const { data, isError, error, isFetching } = useQuery(`post/${post.id}`, () => fetchComments(post.id), { staleTime: 5000 })
+
+  if (isLoading) return <h3>Loading...</h3>
+
+  if (isError) return <><span>Ops, something went wrong, {error}</span></>
 
   return (
     <>
-      <h3 style={{ color: "blue" }}>{post.title}</h3>
+      <h3 style={{ color: "blue" }}>{data.title}</h3>
       <button>Delete</button> <button>Update title</button>
-      <p>{post.body}</p>
+      <p>{data.body}</p>
       <h4>Comments</h4>
       {data.map((comment) => (
         <li key={comment.id}>

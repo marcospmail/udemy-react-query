@@ -1,26 +1,31 @@
-import { useState } from "react";
+import React, { useState } from 'react'
+import { useQuery } from 'react-query'
 
-import { PostDetail } from "./PostDetail";
-const maxPostPage = 10;
+import { PostDetail } from './PostDetail'
 
-async function fetchPosts() {
+const maxPostPage = 10
+
+async function fetchPosts(page) {
   const response = await fetch(
-    "https://jsonplaceholder.typicode.com/posts?_limit=10&_page=0"
-  );
-  return response.json();
+    `https://jsonplaceholder.typicode.com/posts?_limit=10&_page=${page}`
+  )
+  return response.json()
 }
 
 export function Posts() {
-  const [currentPage, setCurrentPage] = useState(0);
-  const [selectedPost, setSelectedPost] = useState(null);
+  const [currentPage, setCurrentPage] = useState(0)
+  const [selectedPost, setSelectedPost] = useState(null)
 
-  // replace with useQuery
-  const data = [];
+  const { data, isLoading, isError, error } = useQuery(['posts', currentPage], () => fetchPosts(currentPage), { staleTime: 2000 })
+
+  if (isLoading) return <h3>Loading...</h3>
+
+  if (isError) return <><span>Ops, something went wrong, {error}</span></>
 
   return (
     <>
       <ul>
-        {data.map((post) => (
+        {data.map(post => (
           <li
             key={post.id}
             className="post-title"
@@ -31,16 +36,20 @@ export function Posts() {
         ))}
       </ul>
       <div className="pages">
-        <button disabled onClick={() => {}}>
+        <button 
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage(v => v - 1)}>
           Previous page
         </button>
-        <span>Page {currentPage + 1}</span>
-        <button disabled onClick={() => {}}>
+        <span>Page {currentPage}</span>
+        <button 
+          disabled={currentPage === maxPostPage} 
+          onClick={() => setCurrentPage(v => v + 1)}>
           Next page
         </button>
       </div>
       <hr />
       {selectedPost && <PostDetail post={selectedPost} />}
     </>
-  );
+  )
 }
