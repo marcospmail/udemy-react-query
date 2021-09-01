@@ -1,6 +1,8 @@
 // @ts-nocheck
+import { useClipboard } from '@chakra-ui/react';
 import dayjs from 'dayjs';
-import { Dispatch, SetStateAction, useState } from 'react';
+import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 
 import { axiosInstance } from '../../../axiosInstance';
 import { queryKeys } from '../../../react-query/constants';
@@ -14,6 +16,8 @@ async function getAppointments(
   year: string,
   month: string,
 ): Promise<AppointmentDateMap> {
+  console.log('caiu uai');
+
   const { data } = await axiosInstance.get(`/appointments/${year}/${month}`);
   return data;
 }
@@ -43,6 +47,16 @@ export function useAppointments(): UseAppointments {
   // state to track current monthYear chosen by user
   // state value is returned in hook return object
   const [monthYear, setMonthYear] = useState(currentMonthYear);
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const newMonthYear = getNewMonthYear(monthYear, 1);
+
+    queryClient.prefetchQuery(
+      [queryKeys.appointments, newMonthYear.year, newMonthYear.month],
+      () => getAppointments(newMonthYear.year, newMonthYear.month),
+    );
+  }, [monthYear, queryClient]);
 
   // setter to update monthYear obj in state when user changes month in view,
   // returned in hook return object
@@ -70,9 +84,20 @@ export function useAppointments(): UseAppointments {
   //
   //    2. The getAppointments query function needs monthYear.year and
   //       monthYear.month
-  const appointments = {};
+
+  const fallback = [];
+  const { data = fallback } = useQuery(
+    [queryKeys.appointments, monthYear.year, monthYear.month],
+    () => getAppointments(monthYear.year, monthYear.month),
+  );
 
   /** ****************** END 3: useQuery  ******************************* */
 
-  return { appointments, monthYear, updateMonthYear, showAll, setShowAll };
+  return {
+    appointments: data,
+    monthYear,
+    updateMonthYear,
+    showAll,
+    setShowAll,
+  };
 }
