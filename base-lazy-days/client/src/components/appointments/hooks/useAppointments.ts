@@ -1,7 +1,12 @@
 // @ts-nocheck
-import { useClipboard } from '@chakra-ui/react';
 import dayjs from 'dayjs';
-import { Dispatch, SetStateAction, useEffect, useState } from 'react';
+import {
+  Dispatch,
+  SetStateAction,
+  useCallback,
+  useEffect,
+  useState,
+} from 'react';
 import { useQuery, useQueryClient } from 'react-query';
 
 import { axiosInstance } from '../../../axiosInstance';
@@ -85,10 +90,20 @@ export function useAppointments(): UseAppointments {
   //    2. The getAppointments query function needs monthYear.year and
   //       monthYear.month
 
+  const selectFn = useCallback(
+    (data) => {
+      return getAvailableAppointments(data, user);
+    },
+    [user],
+  );
+
   const fallback = [];
   const { data = fallback } = useQuery(
     [queryKeys.appointments, monthYear.year, monthYear.month],
     () => getAppointments(monthYear.year, monthYear.month),
+    {
+      select: showAll ? undefined : selectFn,
+    },
   );
 
   /** ****************** END 3: useQuery  ******************************* */
