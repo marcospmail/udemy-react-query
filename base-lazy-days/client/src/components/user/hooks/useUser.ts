@@ -1,4 +1,6 @@
+import axios, { AxiosResponse } from 'axios';
 import { useState } from 'react';
+import { useQuery, useQueryClient } from 'react-query';
 
 import type { User } from '../../../../../shared/types';
 import { axiosInstance, getJWTHeader } from '../../../axiosInstance';
@@ -9,13 +11,28 @@ import {
   setStoredUser,
 } from '../../../user-storage';
 
-// async function getUser(user: User | null): Promise<User | null> {
-//   if (!user) return null;
-//   const { data } = await axiosInstance.get(`/user/${user.id}`, {
-//     headers: getJWTHeader(user),
-//   });
-//   return data.user;
-// }
+interface AxiosResponseWithCancel extends AxiosResponse {
+  cancel: () => void;
+}
+
+async function getUser(user: User | null): Promise<AxiosResponseWithCancel> {
+  const cancelTokenSource = axios.CancelToken.source();
+
+  if (!user) return null;
+  const axiosResponse: AxiosResponseWithCancel = await axiosInstance.get(
+    `/user/${user.id}`,
+    {
+      headers: getJWTHeader(user),
+      cancelToken: cancelTokenSource.token,
+    },
+  );
+
+  axiosResponse.cancel = () => {
+    cancelTokenSource.cancel();
+  };
+
+  return axiosResponse;
+}
 
 interface UseUser {
   user: User | null;
@@ -25,8 +42,26 @@ interface UseUser {
 
 export function useUser(): UseUser {
   const [user, setUser] = useState<User | null>(getStoredUser());
+  const queryClient = useQueryClient();
 
   // TODO: call useQuery to update user data from server
+  useQuery(
+    queryKeys.user,
+    () => {
+      console.log('fetching user');
+      return getUser(user);
+    },
+    {
+      enabled: !!user,
+      onSuccess: (axiosResponse) => {
+        setUser(axiosResponse?.data?.user);
+      },
+    },
+  );
+
+  // useEffect(() => {
+  //   console.log('setou user para', user);
+  // }, [user]);
 
   // meant to be called from useAuth
   function updateUser(newUser: User): void {
@@ -36,7 +71,8 @@ export function useUser(): UseUser {
     // update user in localstorage
     setStoredUser(newUser);
 
-    // TODO: pre-populate user profile in React Query client
+    // TODO: pre - populate user profile in React Query client
+    queryClient.setQueryData(queryKeys.user, newUser);
   }
 
   // meant to be called from useAuth
@@ -48,6 +84,9 @@ export function useUser(): UseUser {
     clearStoredUser();
 
     // TODO: reset user to null in query client
+    queryClient.setQueryData(queryKeys.user, null);
+
+    queryClient.removeQueries([queryKeys.appointments, queryKeys.user]);
   }
 
   return { user, updateUser, clearUser };
