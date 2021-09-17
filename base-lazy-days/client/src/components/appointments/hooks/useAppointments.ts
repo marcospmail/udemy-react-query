@@ -21,7 +21,7 @@ async function getAppointments(
   year: string,
   month: string,
 ): Promise<AppointmentDateMap> {
-  console.log('caiu uai');
+  console.log(`/appointments/${year}/${month}`);
 
   const { data } = await axiosInstance.get(`/appointments/${year}/${month}`);
   return data;

@@ -1,6 +1,6 @@
 import { Box, HStack, Text } from '@chakra-ui/react';
 import dayjs from 'dayjs';
-import { ReactElement } from 'react';
+import { ReactElement, useEffect } from 'react';
 
 import { Appointment as AppointmentType, User } from '../../../../shared/types';
 import { useUser } from '../user/hooks/useUser';
@@ -23,10 +23,18 @@ interface AppointmentProps {
   appointmentData: AppointmentType;
 }
 
+let count = 1;
+
 export function Appointment({
   appointmentData,
 }: AppointmentProps): ReactElement {
   const { user } = useUser();
+
+  useEffect(() => {
+    count += 1;
+    console.log(count);
+  }, []);
+
   const reserveAppointment = useReserveAppointment();
   const [textColor, bgColor] = getAppointmentColor(appointmentData, user?.id);
 
@@ -56,6 +64,7 @@ export function Appointment({
       as={clickable ? 'button' : 'div'}
       onClick={onAppointmentClick}
       _hover={hoverCss}
+      data-testid="seila_appointment"
     >
       <HStack justify="space-between">
         <Text as="span" fontSize="xs">

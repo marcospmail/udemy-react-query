@@ -35,12 +35,15 @@ export function useReserveAppointment(): UseMutateFunction<
   const { mutate } = useMutation(
     (appointment: Appointment) => setAppointmentUser(appointment, user?.id),
     {
-      onSuccess: () =>
+      onSuccess: () => {
         queryClient.invalidateQueries([
           queryKeys.appointments,
           queryKeys.user,
           user?.id,
-        ]),
+        ]);
+
+        toast({ title: 'reserve', status: 'success' });
+      },
     },
   );
 
